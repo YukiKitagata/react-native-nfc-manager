@@ -91,19 +91,19 @@ declare module 'react-native-nfc-manager' {
       requestFloags: number,
     ) => Promise<{ dsfid: number, afi: number, blockSize: number, blockCount: number, icReference: number}>;
     readSingleBlock: (params: {flags: number, blockNumber: number}) => Promise<number[]>;
-    writeSingleBlock: (params: {flags: number, blockNumber: number, dataBlock: number[]}) => Promise<void>; 
-    lockBlock: (params: {flags: number, blockNumber: number}) => Promise<void>; 
-    writeAFI: (params: {flags: number, afi: number}) => Promise<void>; 
-    lockAFI: (params: {flags: number}) => Promise<void>; 
-    writeDSFID: (params: {flags: number, dsfid: number}) => Promise<void>; 
-    lockDSFID: (params: {flags: number}) => Promise<void>; 
-    resetToReady: (params: {flags: number}) => Promise<void>; 
-    select: (params: {flags: number}) => Promise<void>; 
-    stayQuite: () => Promise<void>; 
+    writeSingleBlock: (params: {flags: number, blockNumber: number, dataBlock: number[]}) => Promise<void>;
+    lockBlock: (params: {flags: number, blockNumber: number}) => Promise<void>;
+    writeAFI: (params: {flags: number, afi: number}) => Promise<void>;
+    lockAFI: (params: {flags: number}) => Promise<void>;
+    writeDSFID: (params: {flags: number, dsfid: number}) => Promise<void>;
+    lockDSFID: (params: {flags: number}) => Promise<void>;
+    resetToReady: (params: {flags: number}) => Promise<void>;
+    select: (params: {flags: number}) => Promise<void>;
+    stayQuite: () => Promise<void>;
     customCommand: (params: {flags: number, customCommandCode: number, customRequestParameters: number[]}) => Promise<number[]>;
     extendedReadSingleBlock: (params: {flags: number, blockNumber: number}) => Promise<number[]>;
-    extendedWriteSingleBlock: (params: {flags: number, blockNumber: number, dataBlock: number[]}) => Promise<void>; 
-    extendedLockBlock: (params: {flags: number, blockNumber: number}) => Promise<void>; 
+    extendedWriteSingleBlock: (params: {flags: number, blockNumber: number, dataBlock: number[]}) => Promise<void>;
+    extendedLockBlock: (params: {flags: number, blockNumber: number}) => Promise<void>;
   }
 
   interface NfcManager {
@@ -126,6 +126,8 @@ declare module 'react-native-nfc-manager' {
     writeNdefMessage: (bytes: number[]) => Promise<void>;
 
     getNdefMessage: () => Promise<TagEvent | null>;
+
+    makeReadOnly: () => Promise<boolean>;
 
     /** [iOS ONLY] */
     setAlertMessageIOS: (alertMessage: string) => Promise<void>;
@@ -156,8 +158,6 @@ declare module 'react-native-nfc-manager' {
     cancelNdefWrite(): Promise<any>;
     /** [ANDROID ONLY] */
     getCachedNdefMessageAndroid: () => Promise<TagEvent | null>;
-    /** [ANDROID ONLY] */
-    makeReadOnlyAndroid: () => Promise<boolean>;
     /** [ANDROID ONLY] */
     transceive(bytes: number[]): Promise<number[]>;
     /** [ANDROID ONLY] */

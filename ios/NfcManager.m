@@ -45,7 +45,7 @@ RCT_EXPORT_MODULE()
     if (self = [super init]) {
         NSLog(@"NfcManager created");
     }
-    
+
     if (@available(iOS 13.0, *)) {
         nfcTechTypes = @{
             [NSNumber numberWithInt: NFCTagTypeMiFare]: @"mifare",
@@ -57,7 +57,7 @@ RCT_EXPORT_MODULE()
     } else {
         nfcTechTypes = nil;
     }
-    
+
     return self;
 }
 
@@ -91,16 +91,16 @@ RCT_EXPORT_MODULE()
 - (NSArray *)dataToArray:(NSData *)data
 {
     const unsigned char *dataBuffer = data ? (const unsigned char *)[data bytes] : NULL;
-    
+
     if (!dataBuffer)
         return @[];
-    
+
     NSUInteger          dataLength  = [data length];
     NSMutableArray     *array  = [NSMutableArray arrayWithCapacity:dataLength];
-    
+
     for (int i = 0; i < dataLength; ++i)
         [array addObject:[NSNumber numberWithInteger:dataBuffer[i]]];
-    
+
     return array;
 }
 
@@ -136,7 +136,7 @@ RCT_EXPORT_MODULE()
     NSMutableDictionary *tagInfo = @{}.mutableCopy;
     NSString* tech = [self getRNTechName:tag];
     [tagInfo setObject:tech forKey:@"tech"];
-                   
+
     if (@available(iOS 13.0, *)) {
         if (tag.type == NFCTagTypeMiFare) {
             id<NFCMiFareTag> mifareTag = [tag asNFCMiFareTag];
@@ -199,7 +199,7 @@ RCT_EXPORT_MODULE()
         techRequestCallback(@[getErrorMessage(error)]);
         techRequestCallback = nil;
     }
-    
+
     [self reset];
     [self sendEventWithName:@"NfcManagerSessionClosed"
                        body:@{}];
@@ -212,7 +212,7 @@ RCT_EXPORT_MODULE()
         if (techRequestCallback != nil) {
             BOOL found = false;
             RCTResponseSenderBlock pendingCallback = techRequestCallback;
-            
+
             // by setting callback to nil, we know the promise is resolved
             techRequestCallback = nil;
 
@@ -228,7 +228,7 @@ RCT_EXPORT_MODULE()
                                 pendingCallback(@[getErrorMessage(error)]);
                                 return;
                             }
-                            
+
                             pendingCallback(@[[NSNull null], requestType]);
                         }];
                         found = true;
@@ -236,7 +236,7 @@ RCT_EXPORT_MODULE()
                     }
                 }
             }
-            
+
             if (!found) {
                 pendingCallback(@[@"No tech matches", [NSNull null]]);
             }
@@ -304,7 +304,7 @@ RCT_EXPORT_METHOD(requestTechnology: (NSArray *)techs callback:(nonnull RCTRespo
         callback(@[@"you need to call registerTagEventEx first", [NSNull null]]);
         return;
     }
-    
+
     if (techRequestCallback == nil) {
         techRequestTypes = techs;
         techRequestCallback = callback;
@@ -417,7 +417,7 @@ RCT_EXPORT_METHOD(getTag: (nonnull RCTResponseSenderBlock)callback)
     if (@available(iOS 13.0, *)) {
         NSMutableDictionary* rnTag = @{}.mutableCopy;
         id<NFCNDEFTag> ndefTag = nil;
-        
+
         if (session != nil) {
             if (self->connectedNdefTag) {
                 ndefTag = self->connectedNdefTag;
@@ -430,7 +430,7 @@ RCT_EXPORT_METHOD(getTag: (nonnull RCTResponseSenderBlock)callback)
         } else {
             callback(@[@"No session available", [NSNull null]]);
         }
-        
+
         if (ndefTag) {
             [ndefTag readNDEFWithCompletionHandler:^(NFCNDEFMessage *ndefMessage, NSError *error) {
                 if (!error) {
@@ -440,7 +440,7 @@ RCT_EXPORT_METHOD(getTag: (nonnull RCTResponseSenderBlock)callback)
             }];
             return;
         }
-        
+
         callback(@[[NSNull null], rnTag]);
     } else {
         callback(@[@"Not support in this device", [NSNull null]]);
@@ -451,7 +451,7 @@ RCT_EXPORT_METHOD(getNdefMessage: (nonnull RCTResponseSenderBlock)callback)
 {
     if (@available(iOS 13.0, *)) {
         id<NFCNDEFTag> ndefTag = nil;
-        
+
         if (session != nil) {
             if (self->connectedNdefTag) {
                 ndefTag = self->connectedNdefTag;
@@ -461,7 +461,7 @@ RCT_EXPORT_METHOD(getNdefMessage: (nonnull RCTResponseSenderBlock)callback)
                 ndefTag = [self getNDEFTagHandle:sessionEx.connectedTag];
             }
         }
-        
+
         if (ndefTag) {
             [ndefTag readNDEFWithCompletionHandler:^(NFCNDEFMessage *ndefMessage, NSError *error) {
                 if (error) {
@@ -472,7 +472,7 @@ RCT_EXPORT_METHOD(getNdefMessage: (nonnull RCTResponseSenderBlock)callback)
             }];
             return;
         }
-        
+
         callback(@[@"No ndef available", [NSNull null]]);
     } else {
         callback(@[@"Not support in this device", [NSNull null]]);
@@ -483,7 +483,7 @@ RCT_EXPORT_METHOD(writeNdefMessage:(NSArray*)bytes callback:(nonnull RCTResponse
 {
     if (@available(iOS 13.0, *)) {
         id<NFCNDEFTag> ndefTag = nil;
-        
+
         if (session != nil) {
             if (self->connectedNdefTag) {
                 ndefTag = self->connectedNdefTag;
@@ -493,7 +493,7 @@ RCT_EXPORT_METHOD(writeNdefMessage:(NSArray*)bytes callback:(nonnull RCTResponse
                 ndefTag = [self getNDEFTagHandle:sessionEx.connectedTag];
             }
         }
-        
+
         if (ndefTag) {
             NSData *data = [self arrayToData:bytes];
             NFCNDEFMessage *ndefMsg = [NFCNDEFMessage ndefMessageWithData:data];
@@ -511,7 +511,39 @@ RCT_EXPORT_METHOD(writeNdefMessage:(NSArray*)bytes callback:(nonnull RCTResponse
             }];
             return;
         }
-        
+
+        callback(@[@"No ndef available", [NSNull null]]);
+    } else {
+        callback(@[@"Not support in this device", [NSNull null]]);
+    }
+}
+
+RCT_EXPORT_METHOD(makeReadOnly:(nonnull RCTResponseSenderBlock)callback)
+{
+    if (@available(iOS 13.0, *)) {
+        id<NFCNDEFTag> ndefTag = nil;
+
+        if (session != nil) {
+            if (self->connectedNdefTag) {
+                ndefTag = self->connectedNdefTag;
+            }
+        } else if (sessionEx != nil) {
+            if (sessionEx.connectedTag) {
+                ndefTag = [self getNDEFTagHandle:sessionEx.connectedTag];
+            }
+        }
+
+        if (ndefTag) {
+            [ndefTag writeLockWithCompletionHandler:^(NSError *error) {
+                if (error) {
+                    callback(@[getErrorMessage(error), [NSNull null]]);
+                } else {
+                    callback(@[[NSNull null]]);
+                }
+            }];
+            return;
+        }
+
         callback(@[@"No ndef available", [NSNull null]]);
     } else {
         callback(@[@"Not support in this device", [NSNull null]]);
@@ -623,11 +655,11 @@ RCT_EXPORT_METHOD(sendCommandAPDU:(NSDictionary *)apduData callback: (nonnull RC
                 NSArray *dataArray = [apduData objectForKey:@"data"];
                 NSData *data = [self arrayToData:dataArray];
                 NSNumber *le = [apduData objectForKey:@"le"];
-                
+
                 /*
                 NFCISO7816APDU *apdu = [[NFCISO7816APDU alloc] initWithInstructionClass:0 instructionCode:0x84 p1Parameter:0 p2Parameter:0 data:[[NSData alloc] init] expectedResponseLength:8]
                  */
-                
+
                 NFCISO7816APDU *apdu = [[NFCISO7816APDU alloc] initWithInstructionClass:[cla unsignedCharValue] instructionCode:[ins unsignedCharValue] p1Parameter:[p1 unsignedCharValue] p2Parameter:[p2 unsignedCharValue] data:data expectedResponseLength:[le integerValue]];
                 if (iso7816Tag) {
                     [iso7816Tag sendCommandAPDU:apdu completionHandler:^(NSData* response, uint8_t sw1, uint8_t sw2, NSError* error) {
@@ -696,7 +728,7 @@ RCT_EXPORT_METHOD(iso15693_getSystemInfo:(nonnull NSNumber *)flags callback:(non
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -704,14 +736,14 @@ RCT_EXPORT_METHOD(iso15693_getSystemInfo:(nonnull NSNumber *)flags callback:(non
         }
 
         RequestFlag rFlag = [flags unsignedIntValue];
-        
+
         [tag getSystemInfoWithRequestFlag:rFlag completionHandler:
          ^(NSInteger dsfid, NSInteger afi, NSInteger blockSize, NSInteger blockCount, NSInteger icReference, NSError *error) {
             if (error) {
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[[NSNull null], @{
                            @"dsfid": @(dsfid),
                            @"afi": @(afi),
@@ -732,7 +764,7 @@ RCT_EXPORT_METHOD(iso15693_readSingleBlock:(NSDictionary *)options callback:(non
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -741,7 +773,7 @@ RCT_EXPORT_METHOD(iso15693_readSingleBlock:(NSDictionary *)options callback:(non
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
-        
+
         [tag readSingleBlockWithRequestFlags:flags
                                  blockNumber:blockNumber
                            completionHandler:^(NSData *resp, NSError *error) {
@@ -749,7 +781,7 @@ RCT_EXPORT_METHOD(iso15693_readSingleBlock:(NSDictionary *)options callback:(non
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[[NSNull null], [self dataToArray:resp]]);
         }];
     } else {
@@ -764,7 +796,7 @@ RCT_EXPORT_METHOD(iso15693_writeSingleBlock:(NSDictionary *)options callback:(no
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -774,7 +806,7 @@ RCT_EXPORT_METHOD(iso15693_writeSingleBlock:(NSDictionary *)options callback:(no
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
         NSData *dataBlock = [self arrayToData:[options mutableArrayValueForKey:@"dataBlock"]];
-        
+
         [tag writeSingleBlockWithRequestFlags:flags
                                   blockNumber:blockNumber
                                     dataBlock:dataBlock
@@ -783,7 +815,7 @@ RCT_EXPORT_METHOD(iso15693_writeSingleBlock:(NSDictionary *)options callback:(no
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -798,7 +830,7 @@ RCT_EXPORT_METHOD(iso15693_lockBlock:(NSDictionary *)options callback:(nonnull R
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -807,7 +839,7 @@ RCT_EXPORT_METHOD(iso15693_lockBlock:(NSDictionary *)options callback:(nonnull R
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
-        
+
         [tag lockBlockWithRequestFlags:flags
                                   blockNumber:blockNumber
                            completionHandler:^(NSError *error) {
@@ -815,7 +847,7 @@ RCT_EXPORT_METHOD(iso15693_lockBlock:(NSDictionary *)options callback:(nonnull R
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -830,7 +862,7 @@ RCT_EXPORT_METHOD(iso15693_writeAFI:(NSDictionary *)options callback:(nonnull RC
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -839,7 +871,7 @@ RCT_EXPORT_METHOD(iso15693_writeAFI:(NSDictionary *)options callback:(nonnull RC
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t afi = [[options objectForKey:@"afi"] unsignedIntValue];
-        
+
         [tag writeAFIWithRequestFlag:flags
                                  afi:afi
                    completionHandler:^(NSError *error) {
@@ -847,7 +879,7 @@ RCT_EXPORT_METHOD(iso15693_writeAFI:(NSDictionary *)options callback:(nonnull RC
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -862,7 +894,7 @@ RCT_EXPORT_METHOD(iso15693_lockAFI:(NSDictionary *)options callback:(nonnull RCT
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -870,14 +902,14 @@ RCT_EXPORT_METHOD(iso15693_lockAFI:(NSDictionary *)options callback:(nonnull RCT
         }
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
-        
+
         [tag lockAFIWithRequestFlag:flags
                   completionHandler:^(NSError *error) {
             if (error) {
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -892,7 +924,7 @@ RCT_EXPORT_METHOD(iso15693_writeDSFID:(NSDictionary *)options callback:(nonnull 
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -901,7 +933,7 @@ RCT_EXPORT_METHOD(iso15693_writeDSFID:(NSDictionary *)options callback:(nonnull 
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t dsfid = [[options objectForKey:@"dsfid"] unsignedIntValue];
-        
+
         [tag writeDSFIDWithRequestFlag:flags
                                  dsfid:dsfid
                    completionHandler:^(NSError *error) {
@@ -909,7 +941,7 @@ RCT_EXPORT_METHOD(iso15693_writeDSFID:(NSDictionary *)options callback:(nonnull 
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -924,7 +956,7 @@ RCT_EXPORT_METHOD(iso15693_lockDSFID:(NSDictionary *)options callback:(nonnull R
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -932,7 +964,7 @@ RCT_EXPORT_METHOD(iso15693_lockDSFID:(NSDictionary *)options callback:(nonnull R
         }
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
-        
+
         // notice thie method name, DSFID -> DFSID, seems to be a typo in Core NFC
         [tag lockDFSIDWithRequestFlag:flags
                   completionHandler:^(NSError *error) {
@@ -940,7 +972,7 @@ RCT_EXPORT_METHOD(iso15693_lockDSFID:(NSDictionary *)options callback:(nonnull R
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -955,7 +987,7 @@ RCT_EXPORT_METHOD(iso15693_resetToReady:(NSDictionary *)options callback:(nonnul
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -963,14 +995,14 @@ RCT_EXPORT_METHOD(iso15693_resetToReady:(NSDictionary *)options callback:(nonnul
         }
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
-        
+
         [tag resetToReadyWithRequestFlags:flags
                   completionHandler:^(NSError *error) {
             if (error) {
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -985,7 +1017,7 @@ RCT_EXPORT_METHOD(iso15693_select:(NSDictionary *)options callback:(nonnull RCTR
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -993,14 +1025,14 @@ RCT_EXPORT_METHOD(iso15693_select:(NSDictionary *)options callback:(nonnull RCTR
         }
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
-        
+
         [tag selectWithRequestFlags:flags
                   completionHandler:^(NSError *error) {
             if (error) {
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -1015,7 +1047,7 @@ RCT_EXPORT_METHOD(iso15693_stayQuiet:(nonnull RCTResponseSenderBlock)callback)
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -1027,7 +1059,7 @@ RCT_EXPORT_METHOD(iso15693_stayQuiet:(nonnull RCTResponseSenderBlock)callback)
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -1042,7 +1074,7 @@ RCT_EXPORT_METHOD(iso15693_customCommand:(NSDictionary *)options callback:(nonnu
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -1052,7 +1084,7 @@ RCT_EXPORT_METHOD(iso15693_customCommand:(NSDictionary *)options callback:(nonnu
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         NSInteger customCommandCode = [[options objectForKey:@"customCommandCode"] integerValue];
         NSData *customRequestParameters = [self arrayToData:[options mutableArrayValueForKey:@"customRequestParameters"]];
-        
+
         [tag customCommandWithRequestFlag:flags
                         customCommandCode: customCommandCode
                   customRequestParameters: customRequestParameters
@@ -1061,7 +1093,7 @@ RCT_EXPORT_METHOD(iso15693_customCommand:(NSDictionary *)options callback:(nonnu
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[[NSNull null], [self dataToArray:resp]]);
         }];
     } else {
@@ -1076,7 +1108,7 @@ RCT_EXPORT_METHOD(iso15693_extendedReadSingleBlock:(NSDictionary *)options callb
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -1085,7 +1117,7 @@ RCT_EXPORT_METHOD(iso15693_extendedReadSingleBlock:(NSDictionary *)options callb
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
-        
+
         [tag extendedReadSingleBlockWithRequestFlags:flags
                                          blockNumber:blockNumber
                                    completionHandler:^(NSData *resp, NSError *error) {
@@ -1093,7 +1125,7 @@ RCT_EXPORT_METHOD(iso15693_extendedReadSingleBlock:(NSDictionary *)options callb
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[[NSNull null], [self dataToArray:resp]]);
         }];
     } else {
@@ -1108,7 +1140,7 @@ RCT_EXPORT_METHOD(iso15693_extendedWriteSingleBlock:(NSDictionary *)options call
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -1118,7 +1150,7 @@ RCT_EXPORT_METHOD(iso15693_extendedWriteSingleBlock:(NSDictionary *)options call
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
         NSData *dataBlock = [self arrayToData:[options mutableArrayValueForKey:@"dataBlock"]];
-        
+
         [tag extendedWriteSingleBlockWithRequestFlags:flags
                                   blockNumber:blockNumber
                                     dataBlock: dataBlock
@@ -1127,7 +1159,7 @@ RCT_EXPORT_METHOD(iso15693_extendedWriteSingleBlock:(NSDictionary *)options call
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -1142,7 +1174,7 @@ RCT_EXPORT_METHOD(iso15693_extendedLockBlock:(NSDictionary *)options callback:(n
             callback(@[@"Not connected", [NSNull null]]);
             return;
         }
-        
+
         id<NFCISO15693Tag> tag = [sessionEx.connectedTag asNFCISO15693Tag];
         if (!tag) {
             callback(@[@"incorrect tag type", [NSNull null]]);
@@ -1151,7 +1183,7 @@ RCT_EXPORT_METHOD(iso15693_extendedLockBlock:(NSDictionary *)options callback:(n
 
         RequestFlag flags = [[options objectForKey:@"flags"] unsignedIntValue];
         uint8_t blockNumber = [[options objectForKey:@"blockNumber"] unsignedIntValue];
-        
+
         [tag extendedLockBlockWithRequestFlags:flags
                                   blockNumber:blockNumber
                            completionHandler:^(NSError *error) {
@@ -1159,7 +1191,7 @@ RCT_EXPORT_METHOD(iso15693_extendedLockBlock:(NSDictionary *)options callback:(n
                 callback(@[getErrorMessage(error), [NSNull null]]);
                 return;
             }
-            
+
             callback(@[]);
         }];
     } else {
@@ -1168,4 +1200,4 @@ RCT_EXPORT_METHOD(iso15693_extendedLockBlock:(NSDictionary *)options callback:(n
 }
 
 @end
-  
+

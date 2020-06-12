@@ -180,7 +180,7 @@ class NfcManager {
         sessionAvailable = await this._hasTagEventRegistrationAndroid();
       }
 
-      // make sure we do register for tag event 
+      // make sure we do register for tag event
       if (!sessionAvailable) {
         if (Platform.OS === 'ios') {
           await this._registerTagEventExIOS(options);
@@ -265,7 +265,7 @@ class NfcManager {
   // -------------------------------------
   getCachedNdefMessageAndroid = () => callNative('getCachedNdefMessage');
 
-  makeReadOnlyAndroid = () => callNative('makeReadOnly');
+  makeReadOnly = () => callNative('makeReadOnly');
 
   // -------------------------------------
   // (android) tNfcTech.MifareClassic API
@@ -449,7 +449,7 @@ class NfcManager {
   _unregisterTagEventExIOS = () => callNative('unregisterTagEventEx');
 
   // -------------------------------------
-  // deprecated APIs 
+  // deprecated APIs
   // -------------------------------------
   requestNdefWrite = (bytes, {format=false, formatReadOnly=false}={}) => callNative('requestNdefWrite', [bytes, {format, formatReadOnly}]);
 
